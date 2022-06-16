@@ -1,8 +1,12 @@
 cffi==1.15.0
-click==7.1.2
-cryptography==3.3.2
+click==8.0.4
+cryptography==37.0.2
 enum34==1.1.10
+importlib-metadata==4.8.3
 ipaddress==1.0.23
 peewee==3.14.10
 pycparser==2.21
+python-dotenv==0.20.0
 six==1.16.0
+typing_extensions==4.1.1
+zipp==3.6.0
