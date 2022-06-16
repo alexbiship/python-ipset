@@ -1,5 +1,6 @@
 import datetime
 
+import paramiko
 from cryptography.fernet import Fernet
 from peewee import MySQLDatabase
 
@@ -33,6 +34,20 @@ def insert_server_detail(host, name):
     print("%s server registered" % name)
 
 
+def ssh_remote_command(hostname, username='root', cmd=''):
+    key = paramiko.RSAKey.from_private_key_file('id_rsa.key')
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(hostname=hostname, username=username, pkey=key)
+    ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(cmd)
+
+    while True:
+        line = ssh_stdout.readline()
+        if not line:
+            break
+        print(line, end="")
+
+
 def get_servers(is_all=False):
     if is_all:
         return Server.select().execute()
@@ -43,7 +58,7 @@ def get_servers(is_all=False):
 def post_install_remote():
     servers = get_servers()
     for server in servers:
-        print(server)
+        ssh_remote_command('localhost', 'root', 'ls -al')
 
 
 def create_tables(db, models):
