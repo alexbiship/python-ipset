@@ -33,6 +33,19 @@ def insert_server_detail(host, name):
     print("%s server registered" % name)
 
 
+def get_servers(is_all=False):
+    if is_all:
+        return Server.select().execute()
+    else:
+        return Server.select().where(Server.is_post_installed == 0).execute()
+
+
+def post_install_remote():
+    servers = get_servers()
+    for server in servers:
+        print(server)
+
+
 def create_tables(db, models):
     db.connect()
     db.create_tables(models)

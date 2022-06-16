@@ -39,6 +39,10 @@ def export_iptables_rule():
     run_command("sudo iptables-save | sudo tee /etc/iptables/rules.v4")
 
 
+def get_ipset_rule():
+    pass
+
+
 def create_ipset_persistent_service(rule_name):
     service = """ 
         [Unit]

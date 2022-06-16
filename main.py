@@ -1,7 +1,7 @@
 import click
 
 from post_install import install_all
-from utils import init_db, get_remote_db_data, sync_remote_and_local_db, insert_server_detail
+from utils import init_db, get_remote_db_data, sync_remote_and_local_db, insert_server_detail, post_install_remote
 from models import db
 
 
@@ -15,6 +15,11 @@ def cli():
 def init():
     # Post-Install
     install_all()
+
+
+@click.command(help="Initialize remote servers. Use this right after new server is added.")
+def init_remote():
+    post_install_remote()
 
 
 @click.command(help="Sync remote database and local db(sqlite) and update ipset rule(local server only)")
@@ -48,6 +53,7 @@ cli.add_command(init)
 cli.add_command(sync)
 cli.add_command(set_security_key)
 cli.add_command(add_server)
+cli.add_command(init_remote)
 
 if __name__ == "__main__":
     cli()
