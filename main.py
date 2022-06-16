@@ -1,7 +1,7 @@
 import click
 
 from post_install import install_all
-from utils import init_db
+from utils import init_db, get_remote_db_data
 from models import db
 
 
@@ -15,7 +15,8 @@ def init():
     # Create SQLite DB
     init_db(db)
     # Post-Install
-    install_all()
+    # install_all()
+    get_remote_db_data()
 
 
 @click.command()
