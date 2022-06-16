@@ -1,12 +1,12 @@
 import datetime
 from peewee import Model, CharField, DateTimeField, BooleanField, TextField, SqliteDatabase
 
-db = SqliteDatabase('ipset-config.db')
+db = SqliteDatabase('ipset-config.db', thread_safe=True)
 
 
 class Base(Model):
     created_at = DateTimeField(default=datetime.datetime.utcnow())
-    updated_at = DateTimeField()
+    updated_at = DateTimeField(null=True)
 
     class Meta:
         database = db
