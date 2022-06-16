@@ -15,7 +15,6 @@ class Base(Model):
 class Server(Base):
     host = CharField(max_length=100, null=False, unique=True, index=True)
     name = CharField(max_length=30, null=True)
-    public_key = TextField(null=False)
 
 
 class IpAddress(Base):

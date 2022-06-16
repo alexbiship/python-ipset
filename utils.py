@@ -22,6 +22,17 @@ def decrypt(key, encrypted_str):
     return fernet.decrypt(encrypted_str).decode()
 
 
+def insert_server_detail(host, name):
+    Server.insert(
+        host=host,
+        name=name,
+        created_at=datetime.datetime.utcnow()
+    ).on_conflict(
+        "replace"
+    ).execute()
+    print("%s server registered" % name)
+
+
 def create_tables(db, models):
     db.connect()
     db.create_tables(models)

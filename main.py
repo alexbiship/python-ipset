@@ -1,19 +1,18 @@
 import click
 
 from post_install import install_all
-from utils import init_db, get_remote_db_data, sync_remote_and_local_db
+from utils import init_db, get_remote_db_data, sync_remote_and_local_db, insert_server_detail
 from models import db
 
 
 @click.group()
 def cli():
-    pass
+    # Create SQLite DB
+    init_db(db)
 
 
 @click.command()
 def init():
-    # Create SQLite DB
-    init_db(db)
     # Post-Install
     install_all()
 
@@ -21,6 +20,21 @@ def init():
 @click.command(help="Sync remote database and local db(sqlite) and update ipset rule(local server only)")
 def sync():
     sync_remote_and_local_db()
+
+
+@click.command(help="Deploy local server's up-to-dated ipset rule to other servers.")
+def deploy():
+    pass
+
+
+@click.command(help="Add other servers to manage remotely")
+@click.pass_context
+def add_server(ctx):
+    host = click.prompt(text="Publicly accessible host or IP address", type=click.types.STRING)
+    name = click.prompt(text="Server name", type=click.types.STRING)
+    insert_server_detail(host, name)
+    if click.confirm("Do you want to continue?"):
+        ctx.invoke(add_server)
 
 
 @click.command()
@@ -33,6 +47,7 @@ def set_security_key(key):
 cli.add_command(init)
 cli.add_command(sync)
 cli.add_command(set_security_key)
+cli.add_command(add_server)
 
 if __name__ == "__main__":
     cli()
