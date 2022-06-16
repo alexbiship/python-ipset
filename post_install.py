@@ -31,8 +31,15 @@ def create_ipset_rule(rule_name):
     run_command(cmd)
 
 
-def create_ipset_persistent_service(rule_name):
+def export_ipset_rule(rule_name):
     run_command("sudo ipset save %s -f /etc/ipsets.conf" % rule_name)
+
+
+def export_iptables_rule():
+    run_command("sudo iptables-save | sudo tee /etc/iptables/rules.v4")
+
+
+def create_ipset_persistent_service(rule_name):
     service = """ 
         [Unit]
         Description=Ipset persistence service
@@ -61,7 +68,7 @@ def create_ipset_persistent_service(rule_name):
     cmd = "echo '%s' | sudo tee -a %s > /dev/null" % (service, service_conf_file_path)
     cmd1 = """
         sudo systemctl daemon-reload && 
-        sudo systemctl start ipset-persistent &&
+        sudo systemctl start ipset-persistent && 
         sudo systemctl enable ipset-persistent
     """
     # check if service is already registered
@@ -74,7 +81,7 @@ def basic_install_commands():
     # first reset all ipset and iptables rules
     return [
         "sudo apt update",
-        "sudo apt -y install netfilter-persistent"
+        "sudo apt -y install netfilter-persistent",
         "sudo apt -y install ipset",
         "sudo apt -y install iptables-persistent",
         "sudo ipset destroy",
@@ -94,5 +101,7 @@ def install_all():
             default="whitelist"
         )
     create_ipset_rule(rule_name)
+    export_ipset_rule(rule_name)
+    export_iptables_rule()
     create_ipset_persistent_service(rule_name)
 
