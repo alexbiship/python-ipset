@@ -15,7 +15,7 @@ def init():
     # Create SQLite DB
     init_db(db)
     # Post-Install
-    # install_all()
+    install_all()
 
 
 @click.command(help="Sync remote database and local db(sqlite) and update ipset rule(local server only)")
