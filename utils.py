@@ -1,9 +1,13 @@
+import datetime
+
 from cryptography.fernet import Fernet
 from peewee import MySQLDatabase
 
 from models import Server, IpAddress, Log
 import os
 from dotenv import load_dotenv
+
+from post_install import run_command
 
 load_dotenv()
 
@@ -39,7 +43,7 @@ def connect_remote_db():
     mysql = MySQLDatabase(
         db,
         host=host,
-        port=port,
+        port=int(port),
         user=user,
         passwd=passwd
     )
@@ -54,5 +58,54 @@ def get_remote_db_data():
     # TODO Set logic to fetch rows using OFFSET and LIMIT
     sql = "SELECT %s FROM %s" % (select_field, table)
     cursor = mysql.execute_sql(sql)
-    res = cursor.fetchone()
-    print(res)
+    res = cursor.fetchall()
+    return res
+
+
+def sync_remote_and_local_db():
+    rule_name = os.getenv("IPSET_RULE_NAME")
+    remote_ips = get_remote_db_data()
+    # sync remote to local
+    for remote_ip in remote_ips:
+        query = IpAddress.select().where(IpAddress.ip_address == remote_ip[0]).where(IpAddress.is_active == 1)
+        if query.exists() is False:
+            try:
+                cmd = "sudo ipset add {rule_name} {ip}".format(rule_name=rule_name, ip=remote_ip[0])
+                run_command(cmd)
+                IpAddress.insert(
+                    ip_address=remote_ip[0],
+                    is_active=True,
+                    created_at=datetime.datetime.utcnow(),
+                    updated_at=datetime.datetime.utcnow()
+                ).on_conflict(
+                    action='replace',
+                ).execute()
+            except BaseException as e:
+                Log.insert(text="IP: %s %s" % (remote_ip[0], str(e)), created_at=datetime.datetime.utcnow()).execute()
+
+    # sync local to remote
+    local_ips = IpAddress.select().execute()
+
+    for local_ip in local_ips:
+        is_exists = False
+        try:
+            for remote_ip in remote_ips:
+                if local_ip.ip_address == remote_ip[0]:
+                    is_exists = True
+            if is_exists is False:
+                cmd = "sudo ipset del {rule_name} {ip}".format(
+                    rule_name=rule_name,
+                    ip=local_ip.ip_address
+                )
+                run_command(cmd)
+                IpAddress.update({
+                    IpAddress.is_active: 0,
+                    IpAddress.updated_at: datetime.datetime.utcnow()
+                }).where(
+                    IpAddress.ip_address == local_ip.ip_address
+                ).execute()
+        except BaseException as e:
+            Log.insert(
+                text="IP: %s %s" % (local_ip, str(e)),
+                created_at=datetime.datetime.utcnow()
+            ).execute()
