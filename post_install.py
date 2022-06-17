@@ -76,16 +76,18 @@ def enable_ipset_service_cmd():
     """
 
 
-def create_iptables_rules_cmd():
-    ports = os.getenv("ALLOWED_PORTS").strip().split(",")
-    ipset_rule_name = os.getenv("IPSET_RULE_NAME")
-    cmd = ""
-    print(ports)
-    for port in ports:
-        """
-            sudo iptables -A INPUT -p tcp --dport {port} -m set --match-set {ipset_rule_name} src -j ACCEPT
-            sudo iptables -A INPUT -p tcp -s 0/0 -d 0/0 --dport {port} -j DROP
-        """.format(port=port, ipset_rule_name=ipset_rule_name)
+def create_iptables_accept_rule_cmd(ipset_rule_name):
+    return """
+        sudo iptables -A INPUT -p tcp --dport 80 -m set --match-set {ipset_rule_name} src -j ACCEPT && 
+            sudo iptables -A INPUT -p tcp --dport 443 -m set --match-set {ipset_rule_name} src -j ACCEPT 
+        """.format(ipset_rule_name=ipset_rule_name)
+
+
+def create_iptables_drop_rule_cmd():
+    return """
+        sudo iptables -A INPUT -p tcp -s 0/0 -d 0/0 --dport 80 -j DROP &&
+        sudo iptables -A INPUT -p tcp -s 0/0 -d 0/0 --dport 443 -j DROP
+    """
 
 
 def create_ipset_persistent_service_cmd(rule_name):
@@ -136,22 +138,20 @@ def post_install_remote():
         ssh_remote_command(server.host, 'root', basic_cmds)
         ssh_remote_command(server.host, 'root', create_ipset_rule_cmd(rule_name))
         ssh_remote_command(server.host, 'root', export_ipset_rule_cmd(rule_name))
-        ssh_remote_command(server.host, 'root', export_iptables_rule_cmd(rule_name))
+        ssh_remote_command(server.host, 'root', export_iptables_rule_cmd())
+        ssh_remote_command(server.host, 'root', create_iptables_accept_rule_cmd(rule_name))
+        ssh_remote_command(server.host, 'root', create_iptables_drop_rule_cmd())
         ssh_remote_command(server.host, 'root', create_ipset_persistent_service_cmd(rule_name))
-        ssh_remote_command(server.host, 'root', enable_ipset_service_cmd(rule_name))
+        ssh_remote_command(server.host, 'root', enable_ipset_service_cmd())
 
 
 def post_install_local():
-    run_command(basic_install_cmd())
     rule_name = os.getenv("IPSET_RULE_NAME")
-    if rule_name is None:
-        rule_name = click.prompt(
-            text="Enter IPSet rule name. Required.",
-            type=click.types.STRING,
-            default="whitelist"
-        )
+    run_command(basic_install_cmd())
     run_command(create_ipset_rule_cmd(rule_name))
     run_command(export_ipset_rule_cmd(rule_name))
+    run_command(create_iptables_accept_rule_cmd(rule_name))
+    run_command(create_iptables_drop_rule_cmd())
     run_command(export_iptables_rule_cmd())
     run_command(create_ipset_persistent_service_cmd(rule_name))
     run_command(enable_ipset_service_cmd())
