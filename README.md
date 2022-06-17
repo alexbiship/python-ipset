@@ -17,8 +17,8 @@ $   git clone git@github.com:alexbiship/python-ipset.git
 ```bash
 $   add-apt-repository ppa:deadsnakes/ppa
 $   apt update
-$   apt install python3
-$   apt-get install python3-pip
+$   apt -y install python3
+$   apt -y install python3-pip
 $   pip3 install virtualenv
 ```
 - Create virtual env and install dependencies
