@@ -10,7 +10,10 @@ Deploy local server's ipset rules to other remote servers automatically.
 ```bash
 $   git clone git@github.com:alexbiship/python-ipset.git
 ```
-- Copy RSA(SSH) key for `root` user for remote access, change name to `id_ras.key` and copy to the root path of the project directory
+- Copy RSA(SSH) key for `root` user for remote access, change name to `id_rsa.key` and copy to the root path of the project directory
+```bash
+$ chmod 400 id_rsa.key
+```
 - All installtion and running comands on remote servers are require `root` user permission. Allow `root` user login on remote servers if it's disabled. [See here for more info](https://www.knot35.com/how-to-permanently-enable-root-access-on-aws-ec2-instance/)  Login as `root` 
 - Python v3.6+ is required and tested on Ubuntu 18.04
 
