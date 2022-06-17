@@ -14,7 +14,7 @@ $   git clone git@github.com:alexbiship/python-ipset.git
 ```bash
 $ chmod 400 id_rsa.key
 ```
-- All installtion and running comands on remote servers are require `root` user permission. Allow `root` user login on remote servers if it's disabled. [See here for more info](https://www.knot35.com/how-to-permanently-enable-root-access-on-aws-ec2-instance/)  Login as `root` 
+- All installation and running commands on remote servers are required `root` user permission. Allow `root` user login on remote servers if it's disabled. [See here for more info](https://www.knot35.com/how-to-permanently-enable-root-access-on-aws-ec2-instance/)  Login as `root` 
 - Python v3.6+ is required and tested on Ubuntu 18.04
 
 ```bash
