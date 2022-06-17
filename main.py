@@ -1,6 +1,6 @@
 import click
 
-from post_install import post_install_local, post_install_remote
+from post_install import post_install_local, post_install_remote, deploy_config
 from utils import init_db, sync_remote_and_local_db, insert_server_detail
 from models import db
 
@@ -29,7 +29,7 @@ def sync():
 
 @click.command(help="Deploy local server's up-to-dated ipset rule to other servers.")
 def deploy():
-    pass
+    deploy_config()
 
 
 @click.command(help="Add other servers to manage remotely")
