@@ -58,7 +58,7 @@ def get_servers(is_all=False):
 def post_install_remote():
     servers = get_servers()
     for server in servers:
-        ssh_remote_command('localhost', 'root', 'ls -al')
+        ssh_remote_command(server.host, 'root', 'ls -al')
 
 
 def create_tables(db, models):
