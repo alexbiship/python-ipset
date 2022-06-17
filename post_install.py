@@ -1,25 +1,31 @@
 import subprocess
 import os
-import click
 import paramiko
 from dotenv import load_dotenv
 from models import Server
 
 load_dotenv()
+ipsets_config_path = '/etc/ipsets.conf'
+iptables_config_path = '/etc/iptables/rules.v4'
+rule_name = os.getenv("IPSET_RULE_NAME")
 
 
-def ssh_remote_command(hostname, username='root', cmd=''):
+def ssh_remote_connect(hostname, username="root"):
     key = paramiko.RSAKey.from_private_key_file('id_rsa.key')
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect(hostname=hostname, username=username, pkey=key)
-    ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(cmd)
+    return ssh
+
+
+def ssh_remote_command(con, cmd=''):
+    ssh_stdin, ssh_stdout, ssh_stderr = con.exec_command(cmd)
 
     while True:
         line = ssh_stdout.readline()
         if not line:
             break
-        print("%s@%s: %s" % (hostname, username, line), end="")
+        print(line, end="")
 
 
 def get_servers(is_all=False):
@@ -48,16 +54,32 @@ def run_command(cmd):
     print_stdout(p)
 
 
-def create_ipset_rule_cmd(rule_name):
+def deploy_config():
+    run_command(export_ipset_rule_cmd())
+    run_command(export_iptables_rule_cmd())
+    servers = get_servers()
+    for server in servers:
+        ssh = ssh_remote_connect(server.host, 'root')
+        sftp = ssh.open_sftp()
+        sftp.put(ipsets_config_path, ipsets_config_path)
+        # restore from the file
+        run_command(restore_ipset_rule_cmd())
+
+
+def create_ipset_rule_cmd():
     return "sudo ipset create %s hash:ip" % rule_name
 
 
-def export_ipset_rule_cmd(rule_name):
+def export_ipset_rule_cmd():
     return "sudo ipset save %s -f /etc/ipsets.conf" % rule_name
 
 
-def restore_ipset_rule_cmd(rule_name):
-    return "sudo ipset save %s -f /etc/ipsets.conf" % rule_name
+def restore_ipset_rule_cmd():
+    return "sudo ipset restore -! < /etc/ipsets.conf" % rule_name
+
+
+def restore_iptables_rule_cmd():
+    return "sudo iptables-restore < /etc/ipsets.conf"
 
 
 def export_iptables_rule_cmd():
@@ -76,11 +98,11 @@ def enable_ipset_service_cmd():
     """
 
 
-def create_iptables_accept_rule_cmd(ipset_rule_name):
+def create_iptables_accept_rule_cmd():
     return """
         sudo iptables -A INPUT -p tcp --dport 80 -m set --match-set {ipset_rule_name} src -j ACCEPT && 
             sudo iptables -A INPUT -p tcp --dport 443 -m set --match-set {ipset_rule_name} src -j ACCEPT 
-        """.format(ipset_rule_name=ipset_rule_name)
+        """.format(ipset_rule_name=rule_name)
 
 
 def create_iptables_drop_rule_cmd():
@@ -90,7 +112,7 @@ def create_iptables_drop_rule_cmd():
     """
 
 
-def create_ipset_persistent_service_cmd(rule_name):
+def create_ipset_persistent_service_cmd():
     service = """ 
         [Unit]
         Description=Ipset persistence service
@@ -133,26 +155,26 @@ def basic_install_cmd():
 def post_install_remote():
     servers = get_servers()
     basic_cmds = basic_install_cmd()
-    rule_name = os.getenv("IPSET_RULE_NAME")
     for server in servers:
-        ssh_remote_command(server.host, 'root', basic_cmds)
-        ssh_remote_command(server.host, 'root', create_ipset_rule_cmd(rule_name))
-        ssh_remote_command(server.host, 'root', export_ipset_rule_cmd(rule_name))
-        ssh_remote_command(server.host, 'root', export_iptables_rule_cmd())
-        ssh_remote_command(server.host, 'root', create_iptables_accept_rule_cmd(rule_name))
-        ssh_remote_command(server.host, 'root', create_iptables_drop_rule_cmd())
-        ssh_remote_command(server.host, 'root', create_ipset_persistent_service_cmd(rule_name))
-        ssh_remote_command(server.host, 'root', enable_ipset_service_cmd())
+        ssh = ssh_remote_connect(server.host)
+        ssh_remote_command(ssh, basic_cmds)
+        ssh_remote_command(ssh, create_ipset_rule_cmd())
+        ssh_remote_command(ssh, export_ipset_rule_cmd())
+        ssh_remote_command(ssh, export_iptables_rule_cmd())
+        ssh_remote_command(ssh, create_iptables_accept_rule_cmd())
+        ssh_remote_command(ssh, create_iptables_drop_rule_cmd())
+        ssh_remote_command(ssh, create_ipset_persistent_service_cmd())
+        ssh_remote_command(ssh, enable_ipset_service_cmd())
         Server.update({Server.is_post_installed: True}).where(Server.host == server.host).execute()
 
 
 def post_install_local():
-    rule_name = os.getenv("IPSET_RULE_NAME")
+
     run_command(basic_install_cmd())
-    run_command(create_ipset_rule_cmd(rule_name))
-    run_command(export_ipset_rule_cmd(rule_name))
-    run_command(create_iptables_accept_rule_cmd(rule_name))
+    run_command(create_ipset_rule_cmd())
+    run_command(export_ipset_rule_cmd())
+    run_command(create_iptables_accept_rule_cmd())
     run_command(create_iptables_drop_rule_cmd())
     run_command(export_iptables_rule_cmd())
-    run_command(create_ipset_persistent_service_cmd(rule_name))
+    run_command(create_ipset_persistent_service_cmd())
     run_command(enable_ipset_service_cmd())
