@@ -1,10 +1,32 @@
 import subprocess
 import os
-
 import click
+import paramiko
 from dotenv import load_dotenv
+from models import Server
 
 load_dotenv()
+
+
+def ssh_remote_command(hostname, username='root', cmd=''):
+    key = paramiko.RSAKey.from_private_key_file('id_rsa.key')
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(hostname=hostname, username=username, pkey=key)
+    ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(cmd)
+
+    while True:
+        line = ssh_stdout.readline()
+        if not line:
+            break
+        print("%s@%s: %s" % (hostname, username, line), end="")
+
+
+def get_servers(is_all=False):
+    if is_all:
+        return Server.select().execute()
+    else:
+        return Server.select().where(Server.is_post_installed == 0).execute()
 
 
 def print_stdout(process):
@@ -34,6 +56,10 @@ def export_ipset_rule_cmd(rule_name):
     return "sudo ipset save %s -f /etc/ipsets.conf" % rule_name
 
 
+def restore_ipset_rule_cmd(rule_name):
+    return "sudo ipset save %s -f /etc/ipsets.conf" % rule_name
+
+
 def export_iptables_rule_cmd():
     return "sudo iptables-save | sudo tee /etc/iptables/rules.v4"
 
@@ -48,6 +74,18 @@ def enable_ipset_service_cmd():
         sudo systemctl start ipset-persistent && 
         sudo systemctl enable ipset-persistent
     """
+
+
+def create_iptables_rules_cmd():
+    ports = os.getenv("ALLOWED_PORTS").strip().split(",")
+    ipset_rule_name = os.getenv("IPSET_RULE_NAME")
+    cmd = ""
+    print(ports)
+    for port in ports:
+        """
+            sudo iptables -A INPUT -p tcp --dport {port} -m set --match-set {ipset_rule_name} src -j ACCEPT
+            sudo iptables -A INPUT -p tcp -s 0/0 -d 0/0 --dport {port} -j DROP
+        """.format(port=port, ipset_rule_name=ipset_rule_name)
 
 
 def create_ipset_persistent_service_cmd(rule_name):
@@ -86,11 +124,24 @@ def basic_install_cmd():
          sudo apt -y install netfilter-persistent &&
          sudo apt -y install ipset &&
          sudo apt -y install iptables-persistent &&
-         sudo ipset destroy && sudo iptables -F"
+         sudo ipset destroy && sudo iptables -F
     """
 
 
-def install_all():
+def post_install_remote():
+    servers = get_servers()
+    basic_cmds = basic_install_cmd()
+    rule_name = os.getenv("IPSET_RULE_NAME")
+    for server in servers:
+        ssh_remote_command(server.host, 'root', basic_cmds)
+        ssh_remote_command(server.host, 'root', create_ipset_rule_cmd(rule_name))
+        ssh_remote_command(server.host, 'root', export_ipset_rule_cmd(rule_name))
+        ssh_remote_command(server.host, 'root', export_iptables_rule_cmd(rule_name))
+        ssh_remote_command(server.host, 'root', create_ipset_persistent_service_cmd(rule_name))
+        ssh_remote_command(server.host, 'root', enable_ipset_service_cmd(rule_name))
+
+
+def post_install_local():
     run_command(basic_install_cmd())
     rule_name = os.getenv("IPSET_RULE_NAME")
     if rule_name is None:

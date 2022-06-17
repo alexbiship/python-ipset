@@ -1,7 +1,7 @@
 import click
 
-from post_install import install_all
-from utils import init_db, get_remote_db_data, sync_remote_and_local_db, insert_server_detail, post_install_remote
+from post_install import post_install_local, post_install_remote
+from utils import init_db, sync_remote_and_local_db, insert_server_detail
 from models import db
 
 
@@ -14,7 +14,7 @@ def cli():
 @click.command()
 def init():
     # Post-Install
-    install_all()
+    post_install_local()
 
 
 @click.command(help="Initialize remote servers. Use this right after new server is added.")
