@@ -26,24 +26,31 @@ def run_command(cmd):
     print_stdout(p)
 
 
-def create_ipset_rule(rule_name):
-    cmd = "sudo ipset create %s hash:ip" % rule_name
-    run_command(cmd)
+def create_ipset_rule_cmd(rule_name):
+    return "sudo ipset create %s hash:ip" % rule_name
 
 
-def export_ipset_rule(rule_name):
-    run_command("sudo ipset save %s -f /etc/ipsets.conf" % rule_name)
+def export_ipset_rule_cmd(rule_name):
+    return "sudo ipset save %s -f /etc/ipsets.conf" % rule_name
 
 
-def export_iptables_rule():
-    run_command("sudo iptables-save | sudo tee /etc/iptables/rules.v4")
+def export_iptables_rule_cmd():
+    return "sudo iptables-save | sudo tee /etc/iptables/rules.v4"
 
 
 def get_ipset_rule():
     pass
 
 
-def create_ipset_persistent_service(rule_name):
+def enable_ipset_service_cmd():
+    return """
+        sudo systemctl daemon-reload && 
+        sudo systemctl start ipset-persistent && 
+        sudo systemctl enable ipset-persistent
+    """
+
+
+def create_ipset_persistent_service_cmd(rule_name):
     service = """ 
         [Unit]
         Description=Ipset persistence service
@@ -69,34 +76,22 @@ def create_ipset_persistent_service(rule_name):
         RequiredBy=ufw.service
     """ % rule_name
     service_conf_file_path = "/etc/systemd/system/ipset-persistent.service"
-    cmd = "echo '%s' | sudo tee -a %s > /dev/null" % (service, service_conf_file_path)
-    cmd1 = """
-        sudo systemctl daemon-reload && 
-        sudo systemctl start ipset-persistent && 
-        sudo systemctl enable ipset-persistent
-    """
-    # check if service is already registered
-    if os.path.isfile(service_conf_file_path) is not True:
-        run_command(cmd)
-        run_command(cmd1)
+    return "echo '%s' | sudo tee -a %s > /dev/null" % (service, service_conf_file_path)
 
 
-def basic_install_commands():
+def basic_install_cmd():
     # first reset all ipset and iptables rules
-    return [
-        "sudo apt update",
-        "sudo apt -y install netfilter-persistent",
-        "sudo apt -y install ipset",
-        "sudo apt -y install iptables-persistent",
-        "sudo ipset destroy",
-        "sudo iptables -F"
-    ]
+    return """
+         sudo apt update && 
+         sudo apt -y install netfilter-persistent &&
+         sudo apt -y install ipset &&
+         sudo apt -y install iptables-persistent &&
+         sudo ipset destroy && sudo iptables -F"
+    """
 
 
 def install_all():
-    cmds = basic_install_commands()
-    for cmd in cmds:
-        run_command(cmd)
+    run_command(basic_install_cmd())
     rule_name = os.getenv("IPSET_RULE_NAME")
     if rule_name is None:
         rule_name = click.prompt(
@@ -104,8 +99,8 @@ def install_all():
             type=click.types.STRING,
             default="whitelist"
         )
-    create_ipset_rule(rule_name)
-    export_ipset_rule(rule_name)
-    export_iptables_rule()
-    create_ipset_persistent_service(rule_name)
-
+    run_command(create_ipset_rule_cmd(rule_name))
+    run_command(export_ipset_rule_cmd(rule_name))
+    run_command(export_iptables_rule_cmd())
+    run_command(create_ipset_persistent_service_cmd(rule_name))
+    run_command(enable_ipset_service_cmd())
