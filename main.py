@@ -11,7 +11,7 @@ def cli():
     init_db(db)
 
 
-@click.command()
+@click.command(help="Initialize local server. creating SQLite DB, installing ipsets, etc")
 def init():
     # Post-Install
     post_install_local()
@@ -35,23 +35,15 @@ def deploy():
 @click.command(help="Add other servers to manage remotely")
 @click.pass_context
 def add_server(ctx):
-    host = click.prompt(text="Publicly accessible host or IP address", type=click.types.STRING)
+    host = click.prompt(text="Publicly accessible domain or IP address", type=click.types.STRING)
     name = click.prompt(text="Server name", type=click.types.STRING)
     insert_server_detail(host, name)
     if click.confirm("Do you want to continue?"):
         ctx.invoke(add_server)
 
 
-@click.command()
-@click.argument("key")
-def set_security_key(key):
-    print(key)
-    click.echo("Generating a security key")
-
-
 cli.add_command(init)
 cli.add_command(sync)
-cli.add_command(set_security_key)
 cli.add_command(add_server)
 cli.add_command(init_remote)
 cli.add_command(deploy)
