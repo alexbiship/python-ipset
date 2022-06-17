@@ -143,6 +143,7 @@ def post_install_remote():
         ssh_remote_command(server.host, 'root', create_iptables_drop_rule_cmd())
         ssh_remote_command(server.host, 'root', create_ipset_persistent_service_cmd(rule_name))
         ssh_remote_command(server.host, 'root', enable_ipset_service_cmd())
+        Server.update({Server.is_post_installed: True}).where(Server.host == server.host).execute()
 
 
 def post_install_local():

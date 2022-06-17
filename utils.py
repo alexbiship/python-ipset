@@ -34,10 +34,6 @@ def insert_server_detail(host, name):
     print("%s server registered" % name)
 
 
-
-
-
-
 def create_tables(db, models):
     db.connect()
     db.create_tables(models)
