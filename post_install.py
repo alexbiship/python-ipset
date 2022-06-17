@@ -28,9 +28,11 @@ def ssh_remote_command(con, cmd=''):
         print(line, end="")
 
 
-def get_servers(is_all=False):
+def get_servers(is_all=False, is_active=False):
     if is_all:
         return Server.select().execute()
+    elif is_active:
+        return Server.select().where(Server.is_post_installed == 1).execute()
     else:
         return Server.select().where(Server.is_post_installed == 0).execute()
 
@@ -57,13 +59,15 @@ def run_command(cmd):
 def deploy_config():
     run_command(export_ipset_rule_cmd())
     run_command(export_iptables_rule_cmd())
-    servers = get_servers()
+    servers = get_servers(is_all=False, is_active=True)
     for server in servers:
         ssh = ssh_remote_connect(server.host, 'root')
         sftp = ssh.open_sftp()
         sftp.put(ipsets_config_path, ipsets_config_path)
+        sftp.put(iptables_config_path, iptables_config_path)
         # restore from the file
-        run_command(restore_ipset_rule_cmd())
+        ssh_remote_command(ssh, restore_ipset_rule_cmd())
+        ssh_remote_command(ssh, restore_iptables_rule_cmd())
 
 
 def create_ipset_rule_cmd():
@@ -75,11 +79,11 @@ def export_ipset_rule_cmd():
 
 
 def restore_ipset_rule_cmd():
-    return "sudo ipset restore -! < /etc/ipsets.conf" % rule_name
+    return "sudo ipset restore -! < /etc/ipsets.conf"
 
 
 def restore_iptables_rule_cmd():
-    return "sudo iptables-restore < /etc/ipsets.conf"
+    return "sudo iptables-restore < /etc/iptables/rules.v4"
 
 
 def export_iptables_rule_cmd():
@@ -147,7 +151,6 @@ def basic_install_cmd():
          sudo apt update && 
          sudo apt -y install netfilter-persistent &&
          sudo apt -y install ipset &&
-         sudo apt -y install iptables-persistent &&
          sudo ipset destroy && sudo iptables -F
     """
 

@@ -54,6 +54,7 @@ cli.add_command(sync)
 cli.add_command(set_security_key)
 cli.add_command(add_server)
 cli.add_command(init_remote)
+cli.add_command(deploy)
 
 if __name__ == "__main__":
     cli()
