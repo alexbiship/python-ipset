@@ -1,9 +1,6 @@
 import datetime
-
-import paramiko
 from cryptography.fernet import Fernet
 from peewee import MySQLDatabase
-
 from models import Server, IpAddress, Log
 import os
 from dotenv import load_dotenv
