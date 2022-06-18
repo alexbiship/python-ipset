@@ -38,7 +38,7 @@ python3 main.py
 python3 main.py init
  ```
 -   Register remote servers. host name can be public IP or domain name
- ```
+ ```bash
 python3 main.py add-server
  ```
 -   initialize remote servers(this will install all stuff like `ipsets`, ipset-persistence, etc on remote server side). You must run this command after registering new server otherwise it won't work as expected.
