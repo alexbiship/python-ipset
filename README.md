@@ -1,11 +1,6 @@
-
 # Auto IPSet Rule Deployer
-
 Deploy local server's ipset rules to other remote servers automatically.
-
-
 ## Pre-Installation
-
 - Clone repository
 ```bash
 $   git clone git@github.com:alexbiship/python-ipset.git
@@ -16,7 +11,6 @@ $ chmod 400 id_rsa.key
 ```
 - All installation and running commands on remote servers are required `root` user permission. Allow `root` user login on remote servers if it's disabled. [See here for more info](https://www.knot35.com/how-to-permanently-enable-root-access-on-aws-ec2-instance/)  Login as `root` 
 - Python v3.6+ is required and tested on Ubuntu 18.04
-
 ```bash
 $   add-apt-repository ppa:deadsnakes/ppa
 $   apt update
@@ -39,10 +33,7 @@ $   apt -y install iptables-persistent
  ```bash
 $   python3 main.py
  ```
-
-
  ### Examples
-
  - Firstly, run `init` command and install and config basic settings automatically for local(or main) server that this script runs on.
  ```bash
     python3 main.py init
