@@ -1,3 +1,4 @@
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/8ee3bada9ae645f5a23f888ea4bfd1ce)](https://www.codacy.com/gh/alexbiship/python-ipset/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=alexbiship/python-ipset&amp;utm_campaign=Badge_Grade)
 # Auto IPSet Rule Deployer
 Deploy local server's ipset rules to other remote servers automatically.
 ## Pre-Installation
