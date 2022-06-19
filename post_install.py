@@ -38,10 +38,13 @@ def get_servers(is_all=False, is_active=False):
 
 
 def print_stdout(process):
+    stdout = ""
     while process.poll() is None:
         line = process.stdout.readline()
         if line != "":
             print(line, end="")
+            stdout = stdout + line
+    return stdout
 
 
 def run_command(cmd):
@@ -53,7 +56,8 @@ def run_command(cmd):
         encoding="utf-8",
         errors='replace'
     )
-    print_stdout(p)
+    stdout = print_stdout(p)
+    return stdout
 
 
 def deploy_config():
@@ -102,7 +106,30 @@ def enable_ipset_service_cmd():
     """
 
 
+def check_iptables_rule_exist_cmd(cmd):
+    stdout = run_command(cmd)
+    if "Bad rule" in stdout:
+        return False
+    return True
+
+
+def check_iptables_accept_rule_exist():
+    return check_iptables_rule_exist_cmd("""
+        sudo iptables -C INPUT -p tcp --dport 80 -m set --match-set {ipset_rule_name} src -j ACCEPT && 
+            sudo iptables -C INPUT -p tcp --dport 443 -m set --match-set {ipset_rule_name} src -j ACCEPT 
+        """.format(ipset_rule_name=rule_name))
+
+
+def check_iptables_drop_rule_exist():
+    return check_iptables_rule_exist_cmd("""
+        sudo iptables -C INPUT -p tcp -s 0/0 -d 0/0 --dport 80 -j DROP &&
+        sudo iptables -C INPUT -p tcp -s 0/0 -d 0/0 --dport 443 -j DROP
+    """)
+
+
 def create_iptables_accept_rule_cmd():
+    if check_iptables_accept_rule_exist():
+        return ""
     return """
         sudo iptables -A INPUT -p tcp --dport 80 -m set --match-set {ipset_rule_name} src -j ACCEPT && 
             sudo iptables -A INPUT -p tcp --dport 443 -m set --match-set {ipset_rule_name} src -j ACCEPT 
@@ -110,6 +137,8 @@ def create_iptables_accept_rule_cmd():
 
 
 def create_iptables_drop_rule_cmd():
+    if check_iptables_drop_rule_exist():
+        return ""
     return """
         sudo iptables -A INPUT -p tcp -s 0/0 -d 0/0 --dport 80 -j DROP &&
         sudo iptables -A INPUT -p tcp -s 0/0 -d 0/0 --dport 443 -j DROP
@@ -172,7 +201,6 @@ def post_install_remote():
 
 
 def post_install_local():
-
     run_command(basic_install_cmd())
     run_command(create_ipset_rule_cmd())
     run_command(export_ipset_rule_cmd())
