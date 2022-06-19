@@ -8,6 +8,7 @@ load_dotenv()
 ipsets_config_path = '/etc/ipsets.conf'
 iptables_config_path = '/etc/iptables/rules.v4'
 rule_name = os.getenv("IPSET_RULE_NAME")
+is_local = True
 
 
 def ssh_remote_connect(hostname, username="root"):
@@ -15,6 +16,8 @@ def ssh_remote_connect(hostname, username="root"):
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect(hostname=hostname, username=username, pkey=key)
+    global is_local
+    is_local = False
     return ssh
 
 
@@ -107,6 +110,8 @@ def enable_ipset_service_cmd():
 
 
 def check_iptables_rule_exist_cmd(cmd):
+    if is_local is False:
+        return False
     stdout = run_command(cmd)
     if "Bad rule" in stdout:
         return False
@@ -180,7 +185,7 @@ def basic_install_cmd():
          sudo apt update && 
          sudo apt -y install netfilter-persistent &&
          sudo apt -y install ipset &&
-         sudo ipset destroy && sudo iptables -F
+         sudo ipset destroy && sudo ipset -F && sudo iptables -F
     """
 
 
