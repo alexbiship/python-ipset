@@ -19,7 +19,7 @@ def ssh_remote_connect(hostname, username="root"):
 
 
 def ssh_remote_command(con, cmd=''):
-    ssh_stdout = con.exec_command(cmd)
+    ssh_stdin, ssh_stdout, ssh_stderr = con.exec_command(cmd)
 
     while True:
         line = ssh_stdout.readline()
