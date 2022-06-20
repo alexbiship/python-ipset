@@ -20,10 +20,12 @@ def decrypt(key, encrypted_str):
     return fernet.decrypt(encrypted_str).decode()
 
 
-def insert_server_detail(host, name):
+def insert_server_detail(host, name, port, protocol):
     Server.insert(
         host=host,
         name=name,
+        port=port,
+        protocol=protocol,
         created_at=datetime.datetime.utcnow()
     ).on_conflict(
         "replace"

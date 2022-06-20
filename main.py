@@ -36,8 +36,10 @@ def deploy():
 @click.pass_context
 def add_server(ctx):
     host = click.prompt(text="Publicly accessible domain or IP address", type=click.types.STRING)
-    name = click.prompt(text="Server name", type=click.types.STRING)
-    insert_server_detail(host, name)
+    name = click.prompt(text="Server Name", type=click.types.STRING)
+    port = click.prompt(text="Port", type=click.types.IntRange(0, 65535))
+    protocol = click.prompt(text="Protocol", type=click.types.Choice(['TCP', 'UDP'], case_sensitive=False))
+    insert_server_detail(host, name, port, protocol)
     if click.confirm("Do you want to continue?"):
         ctx.invoke(add_server)
 

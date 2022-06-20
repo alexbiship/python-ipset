@@ -1,5 +1,5 @@
 import datetime
-from peewee import Model, CharField, DateTimeField, BooleanField, TextField, SqliteDatabase
+from peewee import Model, CharField, DateTimeField, BooleanField, TextField, SqliteDatabase, IntegerField
 
 db = SqliteDatabase('ipset-config.db', thread_safe=True)
 
@@ -15,7 +15,10 @@ class Base(Model):
 class Server(Base):
     host = CharField(max_length=100, null=False, unique=True, index=True)
     name = CharField(max_length=30, null=True)
+    port = IntegerField(null=False)
+    protocol = CharField(max_length=10, null=False)
     is_post_installed = BooleanField(default=False)
+    is_active = BooleanField(default=True)
 
 
 class IpAddress(Base):
