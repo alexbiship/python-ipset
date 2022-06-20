@@ -152,9 +152,7 @@ def create_iptable_persistent_service_cmd():
         DefaultDependencies=no
         Requires=netfilter-persistent.service
         Requires=ufw.service
-        Before=network.target
-        Before=netfilter-persistent.service
-        Before=ufw.service
+        After=ipset-persistent.service
         ConditionFileNotEmpty=/etc/iptables.v4
 
         [Service]
@@ -185,14 +183,14 @@ def basic_install_cmd():
     # first reset all ipset and iptables rules
     return """
          sudo apt update && 
-         sudo apt -y install netfilter-persistent &&
-         sudo apt -y install ipset &&
-         sudo systemctl stop iptables-persistent &&
+         sudo apt -y install netfilter-persistent && 
+         sudo apt -y install ipset && 
+         sudo systemctl stop iptables-persistent && 
          sudo systemctl disable iptables-persistent &&  
-         sudo systemctl stop ipset-persistent &&
-         sudo systemctl disable ipset-persistent &&
+         sudo systemctl stop ipset-persistent && 
+         sudo systemctl disable ipset-persistent && 
          sudo systemctl daemon-reload && 
-         sudo systemctl reset-failed
+         sudo systemctl reset-failed && 
          sudo ipset -F && 
          sudo ipset destroy && 
          sudo iptables -F
