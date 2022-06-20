@@ -99,7 +99,7 @@ def enable_services_cmd():
         sudo systemctl daemon-reload && 
         sudo systemctl start ipset-persistent && 
         sudo systemctl start iptables-persistent && 
-        sudo systemctl enable ipset-persistent &&
+        sudo systemctl enable ipset-persistent && 
         sudo systemctl enable iptables-persistent
     """
 
