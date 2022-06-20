@@ -25,28 +25,28 @@ virtualenv .venv
 source .venv/bin/activate
 pip3 install -r requirements.txt
 ```
--   Install iptables-persistent plugin(this can't be installed automatically via bash since it requires client interaction(yes/no prompt))
-```bash
-apt -y install iptables-persistent
-```
+
+[//]: # (-   Install iptables-persistent plugin&#40;this can't be installed automatically via bash since it requires client interaction&#40;yes/no prompt&#41;&#41;)
+
+[//]: # (```bash)
+
+[//]: # (apt -y install iptables-persistent)
+
+[//]: # (```)
 -   Check all available CLI commands
  ```bash
 python3 main.py
  ```
  ### Examples
--   Firstly, run `init` command and install and config basic settings automatically for local(or main) server that this script runs on.
- ```bash
-python3 main.py init
- ```
--   Register remote servers. host name can be public IP or domain name
+-   Firstly, run `add-server` command and register servers.(you have to add local server that monitors MySQL database change. Use localhost or 127.0.0.1)
  ```bash
 python3 main.py add-server
  ```
--   initialize remote servers(this will install all stuff like `ipsets`, ipset-persistence, etc on remote server side). You must run this command after registering new server otherwise it won't work as expected.
+-   Run `init` command and install and config, basic settings automatically for all servers.
  ```bash
-python3 main.py init-remote
+python3 main.py init
  ```
--   Add two cron jobs. One is for synching data between local and mysql db, other one is to deploy ipset rules to all remote servers
+-   Add two cron jobs. One is for syncing mysql db and set proper ipset, other one is to deploy ipset rules to all servers
  ```bash
 crontab -e
 # setup cron job

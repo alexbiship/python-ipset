@@ -120,3 +120,18 @@ def sync_remote_and_local_db():
                 text="IP: %s %s" % (local_ip, str(e)),
                 created_at=datetime.datetime.utcnow()
             ).execute()
+
+
+def reset_data():
+    IpAddress.delete().execute()
+    run_command("sudo ipset -F")
+
+
+
+
+
+
+
+
+
+
