@@ -8,6 +8,7 @@ load_dotenv()
 ipsets_config_path = '/etc/ipsets.conf'
 iptables_config_path = '/etc/iptables/rules.v4'
 rule_name = os.getenv("IPSET_RULE_NAME")
+print("dddddddddddd", rule_name)
 is_local = True
 
 
@@ -101,11 +102,13 @@ def get_ipset_rule():
     pass
 
 
-def enable_ipset_service_cmd():
+def enable_services_cmd():
     return """
         sudo systemctl daemon-reload && 
         sudo systemctl start ipset-persistent && 
-        sudo systemctl enable ipset-persistent
+        sudo systemctl start iptables-persistent && 
+        sudo systemctl enable ipset-persistent &&
+        sudo systemctl enable iptables-persistent
     """
 
 
@@ -118,36 +121,32 @@ def check_iptables_rule_exist_cmd(cmd):
     return True
 
 
-def check_iptables_accept_rule_exist():
+def check_iptables_accept_rule_exist(port, protocol):
     return check_iptables_rule_exist_cmd("""
-        sudo iptables -C INPUT -p tcp --dport 80 -m set --match-set {ipset_rule_name} src -j ACCEPT && 
-            sudo iptables -C INPUT -p tcp --dport 443 -m set --match-set {ipset_rule_name} src -j ACCEPT 
-        """.format(ipset_rule_name=rule_name))
+        sudo iptables -C INPUT -p {protocol} --dport {port} -m set --match-set {ipset_rule_name} src -j ACCEPT
+        """.format(ipset_rule_name=rule_name, protocol=protocol, port=port))
 
 
-def check_iptables_drop_rule_exist():
+def check_iptables_drop_rule_exist(port, protocol):
     return check_iptables_rule_exist_cmd("""
-        sudo iptables -C INPUT -p tcp -s 0/0 -d 0/0 --dport 80 -j DROP &&
-        sudo iptables -C INPUT -p tcp -s 0/0 -d 0/0 --dport 443 -j DROP
-    """)
+        sudo iptables -C INPUT -p {protocol} -s 0/0 -d 0/0 --dport {port} -j DROP
+    """.format(port=port, protocol=protocol))
 
 
-def create_iptables_accept_rule_cmd():
-    if check_iptables_accept_rule_exist():
+def create_iptables_accept_rule_cmd(port, protocol):
+    if check_iptables_accept_rule_exist(port, protocol):
         return ""
     return """
-        sudo iptables -A INPUT -p tcp --dport 80 -m set --match-set {ipset_rule_name} src -j ACCEPT && 
-            sudo iptables -A INPUT -p tcp --dport 443 -m set --match-set {ipset_rule_name} src -j ACCEPT 
-        """.format(ipset_rule_name=rule_name)
+        sudo iptables -A INPUT -p {protocol} --dport {port} -m set --match-set {ipset_rule_name} src -j ACCEPT 
+        """.format(ipset_rule_name=rule_name, protocol=protocol, port=port)
 
 
-def create_iptables_drop_rule_cmd():
-    if check_iptables_drop_rule_exist():
+def create_iptables_drop_rule_cmd(port, protocol):
+    if check_iptables_drop_rule_exist(port, protocol):
         return ""
     return """
-        sudo iptables -A INPUT -p tcp -s 0/0 -d 0/0 --dport 80 -j DROP &&
-        sudo iptables -A INPUT -p tcp -s 0/0 -d 0/0 --dport 443 -j DROP
-    """
+        sudo iptables -A INPUT -p {protocol} -s 0/0 -d 0/0 --dport {port} -j DROP
+    """.format(protocol=protocol, port=port)
 
 
 def create_ipset_persistent_service_cmd():
@@ -168,15 +167,42 @@ def create_ipset_persistent_service_cmd():
         ExecStart=/sbin/ipset restore -f -! /etc/ipsets.conf
          
         # save on service stop, system shutdown etc.
-        ExecStop=/sbin/ipset save %s -f /etc/ipsets.conf
+        ExecStop=/sbin/ipset save {rule_name} -f /etc/ipsets.conf
          
         [Install]
         WantedBy=multi-user.target
         RequiredBy=netfilter-persistent.service
         RequiredBy=ufw.service
-    """ % rule_name
+    """.format(rule_name=rule_name)
     service_conf_file_path = "/etc/systemd/system/ipset-persistent.service"
-    return "echo '%s' | sudo tee -a %s > /dev/null" % (service, service_conf_file_path)
+    return "echo '%s' | sudo tee %s > /dev/null" % (service, service_conf_file_path)
+
+
+def create_iptable_persistent_service_cmd():
+    service = """
+        [Unit]
+        Description=Iptable persistence service
+        DefaultDependencies=no
+        Requires=netfilter-persistent.service
+        Requires=ufw.service
+        Before=network.target
+        Before=netfilter-persistent.service
+        Before=ufw.service
+        ConditionFileNotEmpty=/etc/iptables/rules.v4
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/sbin/iptables-restore -f -! /etc/iptables/rules.v4
+        ExecStop=/sbin/iptables-save -f /etc/iptables/rules.v4
+
+        [Install]
+        WantedBy=multi-user.target
+        RequiredBy=netfilter-persistent.service
+        RequiredBy=ufw.service
+    """
+    service_conf_file_path = "/etc/systemd/system/iptables-persistent.service"
+    return "echo '%s' | sudo tee %s > /dev/null" % (service, service_conf_file_path)
 
 
 def basic_install_cmd():
@@ -185,7 +211,19 @@ def basic_install_cmd():
          sudo apt update && 
          sudo apt -y install netfilter-persistent &&
          sudo apt -y install ipset &&
-         sudo ipset destroy && sudo ipset -F && sudo iptables -F
+         sudo ipset destroy && 
+         sudo systemctl stop iptables-persistent &&
+         sudo systemctl disable iptables-persistent &&  
+         sudo rm "/etc/iptables/rules.v4" &&  
+         sudo rm "/etc/systemd/system/iptables-persistent.service" && 
+         sudo rm "/etc/ipsets.conf" &&  
+         sudo rm "/etc/systemd/system/ipset-persistent.service" && 
+         sudo systemctl stop ipset-persistent &&
+         sudo systemctl disable ipset-persistent &&
+         sudo systemctl daemon-reload && 
+         sudo systemctl reset-failed && 
+         sudo ipset -F && 
+         sudo iptables -F
     """
 
 
@@ -198,10 +236,11 @@ def post_install_remote():
         ssh_remote_command(ssh, create_ipset_rule_cmd())
         ssh_remote_command(ssh, export_ipset_rule_cmd())
         ssh_remote_command(ssh, export_iptables_rule_cmd())
-        ssh_remote_command(ssh, create_iptables_accept_rule_cmd())
-        ssh_remote_command(ssh, create_iptables_drop_rule_cmd())
+        ssh_remote_command(ssh, create_iptables_accept_rule_cmd(server.port, server.protocol))
+        ssh_remote_command(ssh, create_iptables_drop_rule_cmd(server.port, server.protocol))
         ssh_remote_command(ssh, create_ipset_persistent_service_cmd())
-        ssh_remote_command(ssh, enable_ipset_service_cmd())
+        ssh_remote_command(ssh, create_iptable_persistent_service_cmd())
+        ssh_remote_command(ssh, enable_services_cmd())
         Server.update({Server.is_post_installed: True}).where(Server.host == server.host).execute()
 
 
@@ -213,4 +252,4 @@ def post_install_local():
     run_command(create_iptables_drop_rule_cmd())
     run_command(export_iptables_rule_cmd())
     run_command(create_ipset_persistent_service_cmd())
-    run_command(enable_ipset_service_cmd())
+    run_command(enable_services_cmd())
