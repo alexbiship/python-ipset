@@ -47,7 +47,7 @@ python3 main.py add-server
 python3 main.py init
  ```
 -   Run `reset-ipset` command to clean up local server's ipset rules(Not for other servers)
--   Run `reset-servers` command to clean up all ipsets and iptable rules in all servers
+-   Run `reset-servers` command to clean up all ipsets and iptable rules in all servers(factory mode :)
 
 -   Add two cron jobs. One is for syncing mysql db and set proper ipset, other one is to deploy ipset rules to all servers
  ```bash
