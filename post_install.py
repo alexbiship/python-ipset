@@ -160,7 +160,7 @@ def create_iptable_persistent_service_cmd():
         [Service]
         Type=oneshot
         RemainAfterExit=yes
-        ExecStart=/sbin/iptables-restore -f -! /etc/iptables.v4
+        ExecStart=/sbin/iptables-restore -f /etc/iptables.v4
         ExecStop=/sbin/iptables-save -f /etc/iptables.v4
 
         [Install]
