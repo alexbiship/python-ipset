@@ -13,7 +13,7 @@ class Base(Model):
 
 
 class Server(Base):
-    host = CharField(max_length=100, null=False, unique=True, index=True)
+    host = CharField(max_length=100, null=False, index=True)
     name = CharField(max_length=30, null=True)
     port = IntegerField(null=False)
     protocol = CharField(max_length=10, null=False)
