@@ -1,7 +1,6 @@
 import click
-
 from post_install import post_install_remote, deploy_config,  reset_remote_servers
-from utils import init_db, sync_remote_and_local_db, insert_server_detail, reset_data
+from utils import init_db, sync_remote_and_local_db, insert_server_detail, reset_data, is_valid_hostname
 from models import db
 
 
@@ -41,7 +40,11 @@ def reset_servers():
 @click.command(help="Add other servers to manage remotely")
 @click.pass_context
 def add_server(ctx):
-    host = click.prompt(text="Publicly accessible domain or IP address", type=click.types.STRING)
+    host = ""
+    while is_valid_hostname(host) is False:
+        host = click.prompt(text="Publicly accessible domain or IP address", type=click.types.STRING)
+        print("Invalid hostname")
+
     name = click.prompt(text="Server Name", type=click.types.STRING)
     port = click.prompt(text="Port(Use comma to register multiple ports", type=click.types.STRING)
     protocol = click.prompt(text="Protocol", type=click.types.Choice(['TCP', 'UDP'], case_sensitive=False), show_choices=True)

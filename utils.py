@@ -1,4 +1,6 @@
 import datetime
+import re
+
 from cryptography.fernet import Fernet
 from peewee import MySQLDatabase
 from models import Server, IpAddress, Log
@@ -21,7 +23,6 @@ def decrypt(key, encrypted_str):
 
 
 def insert_server_detail(host, name, port, protocol):
-
     Server.insert(
         host=host,
         name=name,
@@ -128,11 +129,11 @@ def reset_data():
     run_command("sudo ipset -F")
 
 
-
-
-
-
-
-
-
+def is_valid_hostname(hostname):
+    if len(hostname) > 255 or len(hostname) == 0:
+        return False
+    if hostname[-1] == ".":
+        hostname = hostname[:-1]
+    allowed = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
+    return all(allowed.match(x) for x in hostname.split("."))
 
