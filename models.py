@@ -13,9 +13,9 @@ class Base(Model):
 
 
 class Server(Base):
-    host = CharField(max_length=100, null=False, index=True)
+    host = CharField(max_length=100, null=False, unique=True, index=True)
     name = CharField(max_length=30, null=True)
-    port = IntegerField(null=False)
+    port = CharField(null=False)
     protocol = CharField(max_length=10, null=False)
     is_post_installed = BooleanField(default=False)
     is_active = BooleanField(default=True)
