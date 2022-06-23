@@ -47,7 +47,7 @@ def add_server(ctx):
 
     name = click.prompt(text="Server Name", type=click.types.STRING)
     port = click.prompt(text="Port(Use comma to register multiple ports", type=click.types.STRING)
-    protocol = click.prompt(text="Protocol", type=click.types.Choice(['TCP', 'UDP'], case_sensitive=False), show_choices=True)
+    protocol = click.prompt(text="Protocol", type=click.types.Choice(['TCP', 'UDP', 'Both'], case_sensitive=False), show_choices=True)
     insert_server_detail(host, name, port, protocol)
     if click.confirm("Do you want to continue?"):
         ctx.invoke(add_server)

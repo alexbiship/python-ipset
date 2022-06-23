@@ -209,8 +209,13 @@ def post_install_remote():
         ssh_remote_command(ssh, export_iptables_rule_cmd())
         for port in ports:
             if port.isnumeric():
-                ssh_remote_command(ssh, create_iptables_accept_rule_cmd(port, server.protocol))
-                ssh_remote_command(ssh, create_iptables_drop_rule_cmd(port, server.protocol))
+                if server.protocol == "Both":
+                    for protocol in ["TCP", "UDP"]:
+                        ssh_remote_command(ssh, create_iptables_accept_rule_cmd(port, protocol))
+                        ssh_remote_command(ssh, create_iptables_drop_rule_cmd(port, protocol))
+                else:
+                    ssh_remote_command(ssh, create_iptables_accept_rule_cmd(port, server.protocol))
+                    ssh_remote_command(ssh, create_iptables_drop_rule_cmd(port, server.protocol))
         ssh_remote_command(ssh, export_iptables_rule_cmd())
         ssh_remote_command(ssh, create_ipset_persistent_service_cmd())
         ssh_remote_command(ssh, create_iptable_persistent_service_cmd())
