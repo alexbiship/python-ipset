@@ -201,13 +201,16 @@ def post_install_remote():
     servers = get_servers()
     basic_cmds = basic_install_cmd()
     for server in servers:
+        ports = server.port.split(",")
         ssh = ssh_remote_connect(server.host)
         ssh_remote_command(ssh, basic_cmds)
         ssh_remote_command(ssh, create_ipset_rule_cmd())
         ssh_remote_command(ssh, export_ipset_rule_cmd())
         ssh_remote_command(ssh, export_iptables_rule_cmd())
-        ssh_remote_command(ssh, create_iptables_accept_rule_cmd(server.port, server.protocol))
-        ssh_remote_command(ssh, create_iptables_drop_rule_cmd(server.port, server.protocol))
+        for port in ports:
+            if port.isnumeric():
+                ssh_remote_command(ssh, create_iptables_accept_rule_cmd(port, server.protocol))
+                ssh_remote_command(ssh, create_iptables_drop_rule_cmd(port, server.protocol))
         ssh_remote_command(ssh, export_iptables_rule_cmd())
         ssh_remote_command(ssh, create_ipset_persistent_service_cmd())
         ssh_remote_command(ssh, create_iptable_persistent_service_cmd())

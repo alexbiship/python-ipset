@@ -43,7 +43,7 @@ def reset_servers():
 def add_server(ctx):
     host = click.prompt(text="Publicly accessible domain or IP address", type=click.types.STRING)
     name = click.prompt(text="Server Name", type=click.types.STRING)
-    port = click.prompt(text="Port", type=click.types.STRING)
+    port = click.prompt(text="Port(Use comma to register multiple ports", type=click.types.STRING)
     protocol = click.prompt(text="Protocol", type=click.types.Choice(['TCP', 'UDP'], case_sensitive=False), show_choices=True)
     insert_server_detail(host, name, port, protocol)
     if click.confirm("Do you want to continue?"):

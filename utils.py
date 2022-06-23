@@ -21,10 +21,11 @@ def decrypt(key, encrypted_str):
 
 
 def insert_server_detail(host, name, port, protocol):
+
     Server.insert(
         host=host,
         name=name,
-        port=port,
+        port=port.strip(),
         protocol=protocol,
         created_at=datetime.datetime.utcnow()
     ).on_conflict(
